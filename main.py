@@ -13,7 +13,7 @@ hostName = "localhost"
 serverPort = 8080
 
 sqliteConnection = sqlite3.connect('totally_not_my_privateKeys.db')
-cursor = sqliteConnection.cursor()
+cursor = sqliteConnection.cursor() #creation of the database
 sql_command = """CREATE TABLE IF NOT EXISTS keys(
 kid INTEGER PRIMARY KEY AUTOINCREMENT,
 key BLOB NOT NULL,
@@ -55,7 +55,7 @@ def int_to_base64(value):
     encoded = base64.urlsafe_b64encode(value_bytes).rstrip(b'=')
     return encoded.decode('utf-8')
 
-def convert_string_to_pem(key_string):
+def convert_string_to_pem(key_string): #I tried to convert the returned string back to PEM form and gave up
     keyl = serialization.load_pem_private_key(
         data=key_string.encode(),
         password=None,
@@ -68,16 +68,16 @@ def convert_string_to_pem(key_string):
     return pelm
 
 dt = datetime.datetime.now()
-seq1 = int(dt.strftime("%Y%m%d%H%M%S"))
+seq1 = int(dt.strftime("%Y%m%d%H%M%S")) #converting datetime to an int
 leg = pem
 beg = expired_pem
 dt = datetime.datetime.now() + datetime.timedelta(hours=1)
 seq2 = int(dt.strftime("%Y%m%d%H%M%S"))
 data = [
-    (1,expired_pem,0),
+    (1,expired_pem,0), 
     (2,pem,seq1),
 ]
-cursor.executemany('INSERT INTO keys VALUES (?,?,?)',data)
+cursor.executemany('INSERT INTO keys VALUES (?,?,?)',data) #adding two keys to the database, one marked as expired with 0 and one not marked as expired with a date
 sqliteConnection.commit()
 
 
@@ -110,8 +110,8 @@ class MyServer(BaseHTTPRequestHandler):
             sqliteConnection = sqlite3.connect('totally_not_my_privateKeys.db')
             cursor = sqliteConnection.cursor()
             res = cursor.execute('SELECT key FROM keys WHERE exp != 0')
-            les = str(res.fetchone())
-            mes = les[3:(len(les) - 3)]
+            les = str(res.fetchone()) #fetching the string key from the database
+            mes = les[3:(len(les) - 3)] #trying to format it
             headers = {
                 "kid": "goodKID"
             }
@@ -123,10 +123,10 @@ class MyServer(BaseHTTPRequestHandler):
                 res = cursor.execute('SELECT key FROM keys WHERE exp == 0')
                 les = str(res.fetchone())
                 mes = les[3:(len(les) - 3)]
-                pelm = convert_string_to_pem(mes)
+                #pelm = convert_string_to_pem(mes)
                 headers["kid"] = "expiredKID"
                 token_payload["exp"] = datetime.datetime.utcnow() - datetime.timedelta(hours=1)
-            encoded_jwt = jwt.encode(token_payload, pem, algorithm="RS256", headers=headers)
+            encoded_jwt = jwt.encode(token_payload, pem, algorithm="RS256", headers=headers) #I gave up trying to plug some form of mes into here
             self.send_response(200)
             self.end_headers()
             self.wfile.write(bytes(encoded_jwt, "utf-8"))
@@ -138,7 +138,7 @@ class MyServer(BaseHTTPRequestHandler):
         self.end_headers()
         return
 
-    def do_GET(self):
+    def do_GET(self): #I didn't even get started on this part of the code yet
         if self.path == "/.well-known/jwks.json":
             sqliteConnection = sqlite3.connect('totally_not_my_privateKeys.db')
             cursor = sqliteConnection.cursor()
